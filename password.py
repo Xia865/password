@@ -12,7 +12,7 @@ class PasswordManager:
     def __init__(self, root):
         self.root = root
         self.root.title("密码管理器")
-        self.data = []
+        self.data = self.load_data()
         self.language = tk.StringVar(value="中文")
         self.translations = {
             "中文": {
@@ -75,6 +75,7 @@ class PasswordManager:
         self.create_widgets()
         self.update_tree()
         self.refresh_totp()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def create_widgets(self):
         # Language selection
@@ -154,6 +155,7 @@ class PasswordManager:
         self.data.append(entry)
         self.update_tree()
         self.update_totp_preview()
+        self.save_data()
         messagebox.showinfo(self.translations[self.language.get()]["info"], self.translations[self.language.get()]["save_success"])
 
     def import_data(self):
@@ -163,6 +165,7 @@ class PasswordManager:
                 self.data = json.load(file)
             self.update_tree()
             self.update_totp_preview()
+            self.save_data()
             messagebox.showinfo(self.translations[self.language.get()]["info"], self.translations[self.language.get()]["import_success"])
 
     def export_data(self):
@@ -191,6 +194,7 @@ class PasswordManager:
             del self.data[index]
             self.update_tree()
             self.update_totp_preview()
+            self.save_data()
 
     def edit_entry(self):
         selected_item = self.tree.selection()
@@ -237,6 +241,7 @@ class PasswordManager:
             }
             self.update_tree()
             self.update_totp_preview()
+            self.save_data()
             edit_window.destroy()
 
         confirm_button = tk.Button(edit_window, text=self.translations[self.language.get()]["confirm"], command=save_edit)
@@ -294,6 +299,21 @@ class PasswordManager:
         self.update_totp_preview()
         self.update_tree()
         self.root.after(1000, self.refresh_totp)  # Refresh every second to update time remaining
+
+    def save_data(self):
+        with open('password_data.json', 'w', encoding='utf-8') as file:
+            json.dump(self.data, file, ensure_ascii=False, indent=4)
+
+    def load_data(self):
+        try:
+            with open('password_data.json', 'r', encoding='utf-8') as file:
+                return json.load(file)
+        except FileNotFoundError:
+            return []
+
+    def on_closing(self):
+        self.save_data()
+        self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()
